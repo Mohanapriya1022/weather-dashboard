@@ -19,8 +19,8 @@
 
 ## Screenshots
 ### Example Output 
-   (results/r1.png)
-   (results/r2.png)
+   ![Forecast Screenshot](results/r1.png)
+   ![Forecast Screenshot](results/r2.png)
 ### Example Weather Output
    ![Forecast Screenshot](results/r3.png)
 ### Dashboard Example
