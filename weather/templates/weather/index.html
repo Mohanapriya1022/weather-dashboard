@@ -1,0 +1,158 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Weather Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&family=Montserrat:ital,wght@0,400;1,700&display=swap" rel="stylesheet">
+<style>
+/* -------------------- Body & Background -------------------- */
+body {
+    font-family: 'Roboto', sans-serif;
+    margin: 0;
+    padding: 0;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: #000;
+    overflow: hidden;
+    position: relative;
+}
+
+/* Floating particles for depth */
+body::before {
+    content: "";
+    position: absolute;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(rgba(255,255,255,0.05) 1px, transparent 1px);
+    background-size: 50px 50px;
+    top: -50%;
+    left: -50%;
+    z-index: 0;
+    pointer-events: none;
+    animation: moveParticles 60s linear infinite;
+}
+@keyframes moveParticles {
+    0% { transform: translate(0,0); }
+    100% { transform: translate(50px,50px); }
+}
+
+/* -------------------- Center Card -------------------- */
+.container {
+    background: rgba(0,0,0,0.85);
+    border: 2px solid #fff;
+    border-radius: 25px;
+    padding: 50px 40px;
+    text-align: center;
+    max-width: 400px;
+    width: 90%;
+    box-shadow: 0 10px 30px rgba(255,255,255,0.1);
+    position: relative;
+    z-index: 1;
+    animation: pulse 2s infinite alternate;
+}
+@keyframes pulse {
+    0% { box-shadow: 0 10px 30px rgba(255,255,255,0.1); }
+    100% { box-shadow: 0 10px 30px rgba(255,255,255,0.3); }
+}
+
+/* -------------------- Headings -------------------- */
+h1 {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 2.5rem;
+    margin-bottom: 30px;
+    color: #FFD700;
+    text-shadow: 2px 2px 5px rgba(255,255,255,0.2);
+}
+
+/* -------------------- Input & Button -------------------- */
+input[type="text"] {
+    width: 80%;
+    padding: 12px 15px;
+    border-radius: 10px;
+    border: 2px solid #fff;
+    background: rgba(255,255,255,0.05);
+    color: #fff;
+    font-size: 18px;
+    margin-bottom: 20px;
+    outline: none;
+    transition: 0.3s;
+}
+input[type="text"]:focus {
+    border-color: #FFD700;
+    box-shadow: 0 0 10px #FFD700;
+}
+
+button {
+    background: #1E90FF;
+    border: none;
+    padding: 12px 25px;
+    font-size: 18px;
+    font-weight: bold;
+    border-radius: 10px;
+    color: white;
+    cursor: pointer;
+    transition: 0.3s;
+}
+button:hover { background: #0d6efd; box-shadow: 0 0 15px #0d6efd; }
+
+/* -------------------- Error Message -------------------- */
+.error {
+    color: #FF6347;
+    margin-top: 10px;
+    font-weight: bold;
+}
+
+/* -------------------- Floating Clouds -------------------- */
+.clouds-layer { position: absolute; width: 100%; height: 100%; top:0; left:0; z-index:0; pointer-events:none; }
+.cloud {
+    position: absolute;
+    background: rgba(255,255,255,0.1);
+    border-radius: 50%;
+    filter: blur(12px);
+}
+@keyframes cloudMove {
+    0% { transform: translateX(-200px) translateY(0); }
+    50% { transform: translateX(100vw) translateY(5px); }
+    100% { transform: translateX(-200px) translateY(0); }
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Weather Forecast Dashboard</h1>
+    <form method="POST" action="{% url 'result' %}">
+        {% csrf_token %}
+        <input type="text" name="city" placeholder="Enter city" required>
+        <br>
+        <button type="submit">Check Weather</button>
+    </form>
+    {% if error %}
+        <p class="error">{{ error }}</p>
+    {% endif %}
+</div>
+
+<div class="clouds-layer" id="cloudsLayer"></div>
+
+<script>
+// Clouds animation
+const cloudsLayer = document.getElementById('cloudsLayer');
+for(let i=0;i<5;i++){
+    const cloud = document.createElement('div');
+    cloud.className = 'cloud';
+    const size = 50 + Math.random()*100;
+    cloud.style.width = size + 'px';
+    cloud.style.height = (size/2)+'px';
+    cloud.style.top = (20 + Math.random()*50) + 'px';
+    cloud.style.left = -Math.random()*200 + 'px';
+    cloud.style.opacity = 0.1 + Math.random()*0.2;
+    cloud.style.animation = `cloudMove ${30 + Math.random()*30}s linear infinite`;
+    cloudsLayer.appendChild(cloud);
+}
+</script>
+
+</body>
+</html>

@@ -1,0 +1,247 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Weather Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&family=Montserrat:ital,wght@0,400;1,700&display=swap" rel="stylesheet">
+<style>
+/* -------------------- Body & Background -------------------- */
+body {
+    font-family: 'Roboto', sans-serif;
+    margin: 0;
+    padding: 20px;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background: #000;
+    color: #fff;
+    overflow-x: hidden;
+    position: relative;
+}
+
+/* Floating particles */
+body::before {
+    content: "";
+    position: absolute;
+    width: 200%;
+    height: 200%;
+    background: transparent;
+    top: -50%;
+    left: -50%;
+    z-index: 0;
+    pointer-events: none;
+    background-image: radial-gradient(rgba(255,255,255,0.05) 1px, transparent 1px);
+    background-size: 50px 50px;
+    animation: moveParticles 60s linear infinite;
+}
+@keyframes moveParticles { 0% { transform: translate(0,0); } 100% { transform: translate(50px,50px); } }
+
+/* -------------------- Headings -------------------- */
+h1 { font-family: 'Montserrat', sans-serif; font-size: 3rem; margin-bottom: 20px; text-shadow: 2px 2px 5px rgba(255,255,255,0.2); z-index: 1; position: relative; }
+h2 { font-family: 'Montserrat', sans-serif; font-size: 2rem; margin: 20px 0 10px 0; z-index: 1; position: relative; }
+
+/* -------------------- Weather Card -------------------- */
+.weather-card {
+    background: rgba(0,0,0,0.85);
+    border: 2px solid #fff;
+    padding: 30px;
+    border-radius: 25px;
+    box-shadow: 0 10px 20px rgba(255,255,255,0.1);
+    text-align: center;
+    max-width: 400px;
+    width: 100%;
+    margin-bottom: 30px;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    position: relative;
+    overflow: hidden;
+    z-index: 1;
+}
+.weather-card:hover { transform: scale(1.05); box-shadow: 0 15px 25px rgba(255,255,255,0.3); }
+
+/* -------------------- Icon Container -------------------- */
+.icon-container { position: relative; display: inline-block; z-index: 2; }
+.icon-container img.icon { width: 120px; height: 120px; position: relative; z-index: 2; }
+
+/* Sun rays */
+.sun-rays {
+    position: absolute;
+    top: 50%; left: 50%;
+    width: 140px; height: 140px;
+    margin-left: -70px; margin-top: -70px;
+    border-radius: 50%;
+    box-shadow: 0 0 30px 10px rgba(255, 223, 0, 0.5);
+    animation: rotate 5s linear infinite;
+    z-index: 1; pointer-events: none;
+}
+@keyframes rotate { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+/* Clouds container */
+.clouds-layer { position: absolute; width: 100%; height: 100%; top:0; left:0; z-index:1; pointer-events:none; }
+
+/* Cloud blob */
+.cloud {
+    position: absolute;
+    background: rgba(255,255,255,0.15);
+    border-radius: 50%;
+    filter: blur(12px);
+}
+@keyframes cloudMove {
+    0% { transform: translateX(-300px) translateY(0); }
+    50% { transform: translateX(100vw) translateY(5px); }
+    100% { transform: translateX(-300px) translateY(0); }
+}
+
+/* Rain */
+.rain-drop { width: 2px; height: 12px; background: #00BFFF; position: absolute; animation: fall 1s linear infinite; }
+@keyframes fall { 0% { top: -10px; opacity:0;} 50%{opacity:1;} 100%{top:100px; opacity:0;} }
+
+/* Snow */
+.snowflake { width:6px; height:6px; background: rgba(173,216,230,0.8); border-radius:50%; position:absolute; animation:snowFall linear infinite; }
+@keyframes snowFall { 0%{top:-10px;opacity:0;transform:translateX(0);}50%{opacity:1;}100%{top:100px;opacity:0;transform:translateX(30px);} }
+
+/* Temperature & description */
+.weather-card .temp { font-size: 50px; font-weight:bold; margin:10px 0; color: #FFD700; }
+.weather-card .description { font-size: 22px; margin:5px 0; font-style:italic; color:#fff; }
+.weather-card .suggestion { font-size: 18px; margin-top:10px; font-weight:500; color:#00BFFF; }
+
+/* Forecast cards */
+.forecast-container { display:flex; justify-content:center; gap:15px; flex-wrap:wrap; margin:20px 0; z-index:1; position: relative; }
+.forecast-box {
+    background: rgba(0,0,0,0.85);
+    border: 2px solid #fff;
+    border-radius: 20px;
+    padding: 15px;
+    width: 120px;
+    text-align:center;
+    box-shadow: 0 5px 10px rgba(255,255,255,0.05);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.forecast-box:hover { transform: scale(1.05); box-shadow:0 10px 15px rgba(255,255,255,0.2); }
+.forecast-box img.icon { width:60px; height:60px; }
+
+/* Chart */
+canvas#forecastChart { max-width:700px; margin:20px 0; background:#111; border-radius:20px; padding:15px; box-shadow:0 10px 20px rgba(255,255,255,0.1); }
+
+/* Button */
+a.button { display:inline-block; margin-top:20px; text-decoration:none; background:#1E90FF; color:white; padding:12px 25px; border-radius:8px; font-size:18px; font-weight:bold; transition: background 0.3s ease; }
+a.button:hover { background:#0d6efd; }
+
+</style>
+</head>
+<body>
+
+<h1>Weather in {{ current_weather.city }}</h1>
+
+<div class="weather-card" id="currentWeatherCard">
+    <div class="icon-container" id="iconContainer">
+        <img class="icon" src="http://openweathermap.org/img/wn/{{ current_weather.icon }}@2x.png" alt="Weather icon">
+        <div class="clouds-layer" id="cloudsLayer"></div>
+    </div>
+    <p class="temp" id="currentTemp">{{ current_weather.temperature }} °C</p>
+    <p class="description">{{ current_weather.description }}</p>
+    <p class="suggestion">{{ current_weather.suggestion }} {{ current_weather.emoji }}</p>
+</div>
+
+<h2>5-Day Forecast</h2>
+<div class="forecast-container">
+    {% for day in forecast_list %}
+    <div class="forecast-box">
+        <p><strong>{{ day.date }}</strong></p>
+        <img class="icon" src="http://openweathermap.org/img/wn/{{ day.icon }}@2x.png" alt="Weather icon">
+        <p>{{ day.temp }} °C</p>
+        <p>{{ day.description }}</p>
+    </div>
+    {% endfor %}
+</div>
+
+<h2>Temperature Trend</h2>
+<canvas id="forecastChart" width="700" height="300"></canvas>
+
+<a href="{% url 'index' %}" class="button">Check Another City</a>
+
+<script>
+// Weather animations
+const iconContainer = document.getElementById('iconContainer');
+const cloudsLayer = document.getElementById('cloudsLayer');
+const weatherDesc = "{{ current_weather.description|lower }}";
+
+// Clear Sky / Sunny
+if(weatherDesc.includes('clear')){
+    const sun = document.createElement('div');
+    sun.className = 'sun-rays';
+    iconContainer.appendChild(sun);
+}
+
+// Clouds
+else if(weatherDesc.includes('cloud')){
+    for(let i=0;i<6;i++){
+        const cloud = document.createElement('div');
+        cloud.className = 'cloud';
+        const size = 50 + Math.random()*100;
+        cloud.style.width = size + 'px';
+        cloud.style.height = (size/2)+'px';
+        cloud.style.top = (10 + Math.random()*60) + 'px';
+        cloud.style.left = -Math.random()*200 + 'px';
+        cloud.style.opacity = 0.1 + Math.random()*0.2;
+        cloud.style.animation = `cloudMove ${30 + Math.random()*30}s linear infinite`;
+        cloudsLayer.appendChild(cloud);
+    }
+}
+
+// Rain
+else if(weatherDesc.includes('rain')){
+    for(let i=0;i<25;i++){
+        const drop = document.createElement('div');
+        drop.className='rain-drop';
+        drop.style.left = Math.random()*100 + 'px';
+        drop.style.animationDelay = Math.random() + 's';
+        drop.style.height = (10+Math.random()*10)+'px';
+        iconContainer.appendChild(drop);
+    }
+}
+
+// Snow
+else if(weatherDesc.includes('snow')){
+    for(let i=0;i<25;i++){
+        const snow = document.createElement('div');
+        snow.className='snowflake';
+        snow.style.left = Math.random()*100 + 'px';
+        snow.style.animationDuration = (2+Math.random()*3)+'s';
+        iconContainer.appendChild(snow);
+    }
+}
+
+// Chart.js
+const ctx = document.getElementById('forecastChart').getContext('2d');
+const forecastChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+        labels: {{ labels|safe }},
+        datasets: [{
+            label: 'Temperature (°C)',
+            data: {{ temps|safe }},
+            backgroundColor: 'rgba(255, 215, 0, 0.2)',
+            borderColor: 'rgba(255, 215, 0, 1)',
+            borderWidth: 2,
+            fill: true,
+            tension: 0.4,
+            pointRadius: 5,
+            pointHoverRadius: 8
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: { tooltip: { mode: 'index', intersect: false } },
+        interaction: { mode: 'nearest', axis: 'x', intersect: false },
+        scales: { 
+            y: { beginAtZero: false, ticks: { color: '#fff' } }, 
+            x: { ticks: { color: '#fff' } } 
+        }
+    }
+});
+</script>
+</body>
+</html>
